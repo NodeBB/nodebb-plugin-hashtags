@@ -4,8 +4,6 @@
 	"library": "./library.js",
 	"hooks": [
 		{ "hook": "static:app.load", "method": "init" },
-		{ "hook": "filter:admin.header.build", "method": "addAdminNavigation" },
-		{ "hook": "action:settings.set", "method": "onSettingsChange" },
 		{ "hook": "filter:parse.post", "method": "parsePost" },
 		{ "hook": "filter:parse.raw", "method": "parseRaw" },
 		{ "hook": "filter:topic.create", "method": "onTopicCreateOrEdit" },

@@ -2,10 +2,8 @@
 
 const nconf = require.main.require('nconf');
 
-const meta = require.main.require('./src/meta');
 const topics = require.main.require('./src/topics');
 const utils = require.main.require('./src/utils');
-const controllers = require('./lib/controllers');
 const utility = require('./lib/utility');
 
 const plugin = {
@@ -15,43 +13,8 @@ const removePunctuationSuffix = function (string) {
 	return string.replace(/[!?.]*$/, '');
 };
 
-plugin.init = function (params, callback) {
-	const router = params.router;
-	const hostMiddleware = params.middleware;
-	// const hostControllers = params.controllers;
+plugin.init = async () => {
 	require('./lib/websockets');
-
-	router.get('/admin/plugins/hashtags', hostMiddleware.admin.buildHeader, controllers.renderAdminPage);
-	router.get('/api/admin/plugins/hashtags', controllers.renderAdminPage);
-
-	plugin.syncSettings(callback);
-};
-
-plugin.syncSettings = function (callback) {
-	meta.settings.get('hashtags', function (err, settings) {
-		if (err) {
-			return callback(err);
-		}
-
-		plugin.settings = Object.assign((plugin.settings || {}), settings);
-		callback();
-	});
-};
-
-plugin.onSettingsChange = function (data) {
-	if (data.plugin === 'hashtags') {
-		plugin.settings = Object.assign((plugin.settings || {}), data.settings);
-	}
-};
-
-plugin.addAdminNavigation = function (header, callback) {
-	header.plugins.push({
-		route: '/plugins/hashtags',
-		icon: 'fa-tint',
-		name: 'Hashtags',
-	});
-
-	callback(null, header);
 };
 
 plugin.parsePost = async (data) => {
