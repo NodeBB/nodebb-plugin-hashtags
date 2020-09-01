@@ -10,5 +10,8 @@
 		{ "hook": "filter:parse.raw", "method": "parseRaw" },
 		{ "hook": "filter:topic.create", "method": "onTopicCreateOrEdit" },
 		{ "hook": "filter:post.edit", "method": "onTopicCreateOrEdit" }
+	],
+	"scripts": [
+		"public/src/autofill.js"
 	]
 }

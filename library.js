@@ -19,6 +19,7 @@ plugin.init = function (params, callback) {
 	const router = params.router;
 	const hostMiddleware = params.middleware;
 	// const hostControllers = params.controllers;
+	require('./lib/websockets');
 
 	router.get('/admin/plugins/hashtags', hostMiddleware.admin.buildHeader, controllers.renderAdminPage);
 	router.get('/api/admin/plugins/hashtags', controllers.renderAdminPage);
