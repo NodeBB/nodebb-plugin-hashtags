@@ -3,9 +3,7 @@
 /* globals $, document, window, socket, app, utils */
 
 $(document).ready(function () {
-	console.log('here');
 	$(window).on('composer:autocomplete:init chat:autocomplete:init', function (ev, data) {
-		console.log(data);
 		var strategy = {
 			match: /\B#([^\s\n]*)?$/,
 			search: function (term, callback) {
