@@ -2,12 +2,15 @@
 
 const nconf = require.main.require('nconf');
 
+const db = require.main.require('./src/database');
 const topics = require.main.require('./src/topics');
+const posts = require.main.require('./src/posts');
 const utils = require.main.require('./src/utils');
 const utility = require('./lib/utility');
 
 const plugin = {
 	regex: /(?:^|\s|>|;|")(#[\w\-_]+)/g,	// greatly simplified from mentions, but now only supports latin/alphanum
+	_indices: {},
 };
 const removePunctuationSuffix = function (string) {
 	return string.replace(/[!?.]*$/, '');
@@ -103,6 +106,62 @@ plugin.onTopicCreateOrEdit = async (data) => {
 	data.data.tags = data.data.tags.filter((tag, idx) => data.data.tags.indexOf(tag) === idx);
 
 	return data;
+};
+
+// We'd like to also store a separate zset for tags made on a per-post basis, so we index them after the fact
+plugin.indexPost = async ({ post }) => {
+	var cleanedContent = plugin.clean(post.content, true, true, true);
+	var matches = cleanedContent.match(plugin.regex);
+
+	if (!matches) {
+		return;
+	}
+
+	matches = matches.map(match => utils.slugify(match));
+	const scores = matches.map(Date.now);
+
+	db.sortedSetsAdd(matches.map(match => `tag:${match}:posts`), scores, post.pid);
+};
+
+// Whenever a specific tag page is loaded, remove the tids and use our own tids (via pids)
+plugin.clobberTagTids = async ({ tag, tids, start, stop }) => {
+	const pids = await db.getSortedSetRevRange('tag:' + tag + ':posts', start, stop);
+	const newTids = await posts.getPostsFields(pids, ['tid']);
+	tids = newTids.map(obj => obj.tid);
+	plugin._indices[tag] = await Promise.all(pids.map(async (pid, idx) => posts.getPidIndex(pid, tids[idx])));
+
+	return { tag, tids, start, stop };
+};
+
+// By default tags page only returns tids, update the links to point to individual posts (via topic indices)
+plugin.updateTagsPage = async (data) => {
+	const index = plugin._indices[data.templateData.tag];
+	data.templateData.topics.map((topic, idx) => {
+		if (index[idx] > 0) {
+			topic.slug = `${topic.slug}/${index[idx]}`;
+		}
+		delete topic.bookmark;
+
+		return topic;
+	});
+
+	return data;
+};
+
+// Update tag count for pagination purposes in /tag/:tag page
+plugin.updateTagCounts = async ({ tag, count }) => {
+	count = await db.sortedSetCard('tag:' + tag + ':posts');
+	return { tag, count };
+};
+
+// Update tag counts on /tags
+plugin.updateTagListCounts = async ({ tags }) => {
+	await Promise.all(tags.map(async (tag) => {
+		tag.score = await db.sortedSetCard(`tag:${tag.value}:posts`);
+		return tag;
+	}));
+
+	return { tags };
 };
 
 module.exports = plugin;

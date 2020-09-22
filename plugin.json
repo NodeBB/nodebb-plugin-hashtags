@@ -7,9 +7,18 @@
 		{ "hook": "filter:parse.post", "method": "parsePost" },
 		{ "hook": "filter:parse.raw", "method": "parseRaw" },
 		{ "hook": "filter:topic.create", "method": "onTopicCreateOrEdit" },
-		{ "hook": "filter:post.edit", "method": "onTopicCreateOrEdit" }
+		{ "hook": "filter:post.edit", "method": "onTopicCreateOrEdit" },
+		{ "hook": "action:post.save", "method": "indexPost" },
+		{ "hook": "action:post.edit", "method": "indexPost" },
+		{ "hook": "filter:topics.getTagTids", "method": "clobberTagTids" },
+		{ "hook": "filter:tag.build", "method": "updateTagsPage" },
+		{ "hook": "filter:topics.getTagTopicCount", "method": "updateTagCounts" },
+		{ "hook": "filter:tags.getAll", "method": "updateTagListCounts" }
 	],
 	"scripts": [
 		"public/src/autofill.js"
+	],
+	"upgrades": [
+		"./upgrades/reindex_tag_pids.js"
 	]
 }
