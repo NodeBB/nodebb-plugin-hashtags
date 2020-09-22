@@ -1,5 +1,7 @@
 'use strict';
 
+const _ = require('lodash');
+
 const db = require.main.require('./src/database');
 const topics = require.main.require('./src/topics');
 const posts = require.main.require('./src/posts');
@@ -16,12 +18,14 @@ module.exports = {
 			return topics.getMainPids(tids);
 		}));
 
-		// Join all the arrays
+		// Join all the arrays, eliminate duplicates
 		pids = pids.reduce((memo, cur) => memo.concat(cur), []);
+		pids = _.uniq(pids);
+		console.log('sending', pids, 'in');
 
 		// Turn them pids into pseudo post objects
 		const payload = await posts.getPostsFields(pids, ['pid', 'content']);
 
-		await Promise.allSettled(payload.map(async post => main.indexPost({ post })));
+		await Promise.allSettled(payload.map(async (post) => main.indexPost({ post })));
 	},
 };

@@ -114,12 +114,18 @@ plugin.onTopicCreateOrEdit = async (data) => {
 plugin.indexPost = async ({ post }) => {
 	var cleanedContent = plugin.clean(post.content, true, true, true);
 	var matches = cleanedContent.match(plugin.regex);
+	const tid = await posts.getPostField(post.pid, 'tid');
+	const topicTags = await db.getSetMembers(`topic:${tid}:tags`);
 
-	if (!matches) {
+	if (!matches && !topicTags.length) {
 		return;
 	}
 
+	matches = matches || [];
 	matches = matches.map((match) => utils.slugify(match));
+	matches = matches.concat(topicTags);
+	matches = _.uniq(matches);
+
 	const scores = matches.map(Date.now);
 
 	db.sortedSetsAdd(matches.map((match) => `tag:${match}:posts`), scores, post.pid);
