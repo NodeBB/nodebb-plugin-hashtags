@@ -1,8 +1,10 @@
 'use strict';
 
 const nconf = require.main.require('nconf');
+const _ = require('lodash');
 
 const db = require.main.require('./src/database');
+const user = require.main.require('./src/user');
 const topics = require.main.require('./src/topics');
 const posts = require.main.require('./src/posts');
 const utils = require.main.require('./src/utils');
@@ -10,7 +12,7 @@ const utility = require('./lib/utility');
 
 const plugin = {
 	regex: /(?:^|\s|>|;|")(#[\w\-_]+)/g,	// greatly simplified from mentions, but now only supports latin/alphanum
-	_indices: {},
+	_cache: {},
 };
 const removePunctuationSuffix = function (string) {
 	return string.replace(/[!?.]*$/, '');
@@ -117,28 +119,33 @@ plugin.indexPost = async ({ post }) => {
 		return;
 	}
 
-	matches = matches.map(match => utils.slugify(match));
+	matches = matches.map((match) => utils.slugify(match));
 	const scores = matches.map(Date.now);
 
-	db.sortedSetsAdd(matches.map(match => `tag:${match}:posts`), scores, post.pid);
+	db.sortedSetsAdd(matches.map((match) => `tag:${match}:posts`), scores, post.pid);
 };
 
 // Whenever a specific tag page is loaded, remove the tids and use our own tids (via pids)
 plugin.clobberTagTids = async ({ tag, tids, start, stop }) => {
 	const pids = await db.getSortedSetRevRange('tag:' + tag + ':posts', start, stop);
 	const newTids = await posts.getPostsFields(pids, ['tid']);
-	tids = newTids.map(obj => obj.tid);
-	plugin._indices[tag] = await Promise.all(pids.map(async (pid, idx) => posts.getPidIndex(pid, tids[idx])));
+	tids = newTids.map((obj) => obj.tid);
+	plugin._cache[tag] = pids;
 
 	return { tag, tids, start, stop };
 };
 
 // By default tags page only returns tids, update the links to point to individual posts (via topic indices)
 plugin.updateTagsPage = async (data) => {
-	const index = plugin._indices[data.templateData.tag];
+	const pids = plugin._cache[data.templateData.tag];
+	const tids = data.templateData.topics.map((topic) => topic.tid);
+	const index = await Promise.all(pids.map(async (pid, idx) => posts.getPidIndex(pid, tids[idx])));
+	const teasers = await getTeasers(pids);
+
 	data.templateData.topics.map((topic, idx) => {
 		if (index[idx] > 0) {
 			topic.slug = `${topic.slug}/${index[idx]}`;
+			topic.teaser = teasers[idx];
 		}
 		delete topic.bookmark;
 
@@ -147,6 +154,31 @@ plugin.updateTagsPage = async (data) => {
 
 	return data;
 };
+
+async function getTeasers(pids) {
+	let postData = await posts.getPostsFields(pids, ['pid', 'uid', 'timestamp', 'tid', 'content']);
+	postData = postData.filter((post) => post && post.pid);
+	postData = postData.filter(Boolean);
+	const uids = _.uniq(postData.map((post) => post.uid));
+
+	const usersData = await user.getUsersFields(uids, ['uid', 'username', 'userslug', 'picture']);
+
+	var users = {};
+	usersData.forEach(function (user) {
+		users[user.uid] = user;
+	});
+	postData.forEach(function (post) {
+		// If the post author isn't represented in the retrieved users' data, then it means they were deleted, assume guest.
+		if (!users.hasOwnProperty(post.uid)) {
+			post.uid = 0;
+		}
+
+		post.user = users[post.uid];
+		post.timestampISO = utils.toISOString(post.timestamp);
+	});
+
+	return postData;
+}
 
 // Update tag count for pagination purposes in /tag/:tag page
 plugin.updateTagCounts = async ({ tag, count }) => {
