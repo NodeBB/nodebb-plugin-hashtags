@@ -43,5 +43,8 @@
     "eslint-plugin-import": "2.22.0",
     "husky": "4.2.5",
     "lint-staged": "10.2.13"
+  },
+  "dependencies": {
+    "lodash": "^4.17.20"
   }
 }
