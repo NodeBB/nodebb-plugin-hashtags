@@ -26,12 +26,15 @@ module.exports = {
 		pids = _.uniq(pids);
 
 		progress.total = pids.length;
-		await batch.processArray(pids, async (pids) => {
+		await batch.processArray(pids, async function (pids) {
 			progress.incr(pids.length);
 
 			// Turn them pids into pseudo post objects
 			const payload = await posts.getPostsFields(pids, ['pid', 'content']);
 			await Promise.allSettled(payload.map(async (post) => main.indexPost({ post })));
+		}, {
+			progress: progress,
+			batch: 500,
 		});
 	},
 };
