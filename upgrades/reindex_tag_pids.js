@@ -19,7 +19,7 @@ module.exports = {
 		}));
 
 		// Join all the arrays, eliminate duplicates
-		pids = pids.reduce((memo, cur) => memo.concat(cur), []);
+		pids = pids.reduce((memo, cur) => memo.concat(cur), []).filter(Boolean);
 		pids = _.uniq(pids);
 		console.log('sending', pids, 'in');
 
