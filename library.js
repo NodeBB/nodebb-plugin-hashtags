@@ -4,6 +4,7 @@ const nconf = require.main.require('nconf');
 const _ = require('lodash');
 
 const db = require.main.require('./src/database');
+const meta = require.main.require('./src/meta');
 const user = require.main.require('./src/user');
 const topics = require.main.require('./src/topics');
 const posts = require.main.require('./src/posts');
@@ -133,6 +134,8 @@ plugin.indexPost = async ({ post }) => {
 
 // Whenever a specific tag page is loaded, remove the tids and use our own tids (via pids)
 plugin.clobberTagTids = async ({ tag, tids, start, stop }) => {
+	tag = utils.cleanUpTag(tag, meta.config.maximumTagLength);
+
 	const pids = await db.getSortedSetRevRange('tag:' + tag + ':posts', start, stop);
 	const newTids = await posts.getPostsFields(pids, ['tid']);
 	tids = newTids.map((obj) => obj.tid);
@@ -143,7 +146,8 @@ plugin.clobberTagTids = async ({ tag, tids, start, stop }) => {
 
 // By default tags page only returns tids, update the links to point to individual posts (via topic indices)
 plugin.updateTagsPage = async (data) => {
-	const pids = plugin._cache[data.templateData.tag];
+	const tag = utils.cleanUpTag(data.templateData.tag, meta.config.maximumTagLength);
+	const pids = plugin._cache[tag];
 	const tids = data.templateData.topics.map((topic) => topic.tid);
 	const index = await Promise.all(pids.map(async (pid, idx) => posts.getPidIndex(pid, tids[idx])));
 	const teasers = await getTeasers(pids);
@@ -188,6 +192,8 @@ async function getTeasers(pids) {
 
 // Update tag count for pagination purposes in /tag/:tag page
 plugin.updateTagCounts = async ({ tag, count }) => {
+	tag = utils.cleanUpTag(tag, meta.config.maximumTagLength);
+
 	count = await db.sortedSetCard('tag:' + tag + ':posts');
 	return { tag, count };
 };
@@ -195,6 +201,7 @@ plugin.updateTagCounts = async ({ tag, count }) => {
 // Update tag counts on /tags
 plugin.updateTagListCounts = async ({ tags }) => {
 	await Promise.all(tags.map(async (tag) => {
+		tag.value = utils.cleanUpTag(tag.value, meta.config.maximumTagLength);
 		tag.score = await db.sortedSetCard(`tag:${tag.value}:posts`);
 		return tag;
 	}));
