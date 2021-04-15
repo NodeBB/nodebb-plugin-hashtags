@@ -10,7 +10,7 @@
 		{ "hook": "filter:post.edit", "method": "onTopicCreateOrEdit" },
 		{ "hook": "action:post.save", "method": "indexPost" },
 		{ "hook": "action:post.edit", "method": "indexPost" },
-		{ "hook": "filter:topics.getTagTids", "method": "clobberTagTids" },
+		{ "hook": "filter:topics.getTagTidsByCids", "method": "clobberTagTids" },
 		{ "hook": "filter:tag.build", "method": "updateTagsPage" },
 		{ "hook": "filter:topics.getTagTopicCount", "method": "updateTagCounts" },
 		{ "hook": "filter:tags.getAll", "method": "updateTagListCounts" }

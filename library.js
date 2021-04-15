@@ -8,6 +8,7 @@ const meta = require.main.require('./src/meta');
 const user = require.main.require('./src/user');
 const topics = require.main.require('./src/topics');
 const posts = require.main.require('./src/posts');
+const slugify = require.main.require('./src/slugify');
 const utils = require.main.require('./src/utils');
 const utility = require('./lib/utility');
 
@@ -103,7 +104,7 @@ plugin.onTopicCreateOrEdit = async (data) => {
 	}
 
 	// Get rid of the cruft caught by the regex, at the start of the tag
-	data.data.tags = [...data.data.tags, ...matches.map(utils.slugify)];
+	data.data.tags = [...data.data.tags, ...matches.map(slugify)];
 
 	// Filter duplicates out
 	data.data.tags = data.data.tags.filter((tag, idx) => data.data.tags.indexOf(tag) === idx);
@@ -123,7 +124,7 @@ plugin.indexPost = async ({ post }) => {
 	}
 
 	matches = matches || [];
-	matches = matches.map((match) => utils.slugify(match));
+	matches = matches.map((match) => slugify(match));
 	matches = matches.concat(topicTags);
 	matches = _.uniq(matches);
 
