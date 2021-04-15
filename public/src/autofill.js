@@ -1,15 +1,17 @@
 'use strict';
 
-/* globals $, document, window, socket, app, utils */
+/* globals $, document, window, socket, app */
 
 $(document).ready(function () {
 	$(window).on('composer:autocomplete:init chat:autocomplete:init', function (ev, data) {
-		var strategy = {
+		let slugify;
+		const strategy = {
 			match: /\B#([^\s\n]*)?$/,
 			search: function (term, callback) {
 				// Get composer metadata
 				var uuid = data.options.className && data.options.className.match(/dropdown-(.+?)\s/)[1];
-				require(['composer'], function (composer) {
+				require(['composer', 'slugify'], function (composer, _slugify) {
+					slugify = _slugify;
 					socket.emit('plugins.hashtags.search', {
 						query: term,
 						composerObj: composer.posts[uuid],
@@ -25,7 +27,7 @@ $(document).ready(function () {
 			index: 1,
 			replace: function (hashtag) {
 				hashtag = $('<div/>').html(hashtag).text();
-				return '#' + utils.slugify(hashtag, true) + ' ';
+				return '#' + slugify(hashtag, true) + ' ';
 			},
 			cache: true,
 		};
