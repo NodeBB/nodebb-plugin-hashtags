@@ -42,7 +42,7 @@
     "eslint-config-airbnb-base": "14.2.1",
     "eslint-plugin-import": "2.22.1",
     "husky": "6.0.0",
-    "lint-staged": "10.5.4"
+    "lint-staged": "11.0.0"
   },
   "dependencies": {
     "lodash": "^4.17.20"
