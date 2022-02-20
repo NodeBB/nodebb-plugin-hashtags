@@ -13,7 +13,7 @@ const utils = require.main.require('./src/utils');
 const utility = require('./lib/utility');
 
 const plugin = {
-	regex: /(?:^|\s|>|;|")(#[\w\-_]+)/g,	// greatly simplified from mentions, but now only supports latin/alphanum
+	regex: /(?:^|\s|>|;|")(#[\w\-_]+)(?=[^>]*<)/g, // greatly simplified from mentions, but now only supports latin/alphanum
 	_cache: {},
 };
 const removePunctuationSuffix = function (string) {
