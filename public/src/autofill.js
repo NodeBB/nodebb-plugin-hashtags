@@ -15,9 +15,10 @@ $(document).ready(function () {
 					socket.emit('plugins.hashtags.search', {
 						query: term,
 						composerObj: composer.posts[uuid],
-					}, function (err, tags) {
+					}, async function (err, tags) {
 						if (err) {
-							return app.alertError(err);
+							const alerts = await app.require('alerts');
+							return alerts.error(err);
 						}
 
 						callback(tags);
