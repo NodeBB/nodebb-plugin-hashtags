@@ -5,7 +5,7 @@
   "main": "library.js",
   "repository": {
     "type": "git",
-    "url": "https://github.com/julianlam/nodebb-plugin-hashtags"
+    "url": "https://github.com/NodeBB/nodebb-plugin-hashtags"
   },
   "keywords": [
     "nodebb",
@@ -29,7 +29,7 @@
   },
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/julianlam/nodebb-plugin-hashtags/issues"
+    "url": "https://github.com/NodeBB/nodebb-plugin-hashtags/issues"
   },
   "readmeFilename": "README.md",
   "nbbpm": {
