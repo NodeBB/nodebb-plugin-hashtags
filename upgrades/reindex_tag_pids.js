@@ -2,10 +2,10 @@
 
 const _ = require('lodash');
 
-const db = require.main.require('./src/database');
-const topics = require.main.require('./src/topics');
-const posts = require.main.require('./src/posts');
-const batch = require.main.require('./src/batch');
+const db = nodebb.require('./src/database');
+const topics = nodebb.require('./src/topics');
+const posts = nodebb.require('./src/posts');
+const batch = nodebb.require('./src/batch');
 const main = require('../library');
 
 module.exports = {

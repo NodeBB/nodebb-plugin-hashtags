@@ -1,15 +1,16 @@
 'use strict';
 
-const nconf = require.main.require('nconf');
 const _ = require('lodash');
 
-const db = require.main.require('./src/database');
-const meta = require.main.require('./src/meta');
-const user = require.main.require('./src/user');
-const topics = require.main.require('./src/topics');
-const posts = require.main.require('./src/posts');
-const slugify = require.main.require('./src/slugify');
-const utils = require.main.require('./src/utils');
+const nconf = nodebb.require('nconf');
+const db = nodebb.require('./src/database');
+const meta = nodebb.require('./src/meta');
+const user = nodebb.require('./src/user');
+const topics = nodebb.require('./src/topics');
+const posts = nodebb.require('./src/posts');
+const slugify = nodebb.require('./src/slugify');
+const utils = nodebb.require('./src/utils');
+
 const utility = require('./lib/utility');
 
 const plugin = {
@@ -37,7 +38,7 @@ plugin.parseRaw = async (content) => {
 	const splitContent = utility.split(content, false, false, true);
 	let matches = [];
 	splitContent.forEach(function (cleanedContent, i) {
-		if ((i & 1) === 0) {
+		if ((i % 2) === 0) {
 			matches = matches.concat(cleanedContent.match(plugin.regex) || []);
 		}
 	});
@@ -51,11 +52,11 @@ plugin.parseRaw = async (content) => {
 		return idx === matches.indexOf(cur);
 	}).map(function (match) {
 		/**
-		 *	Javascript-favour of regex does not support lookaround,
-		 *	so need to clean up the cruft by discarding everthing
-		 *	before the @
+		 * Javascript-favour of regex does not support lookaround,
+		 * so need to clean up the cruft by discarding everthing
+		 * before the @
 		 */
-		var atIndex = match.indexOf('#');
+		const atIndex = match.indexOf('#');
 		return atIndex !== 0 ? match.slice(atIndex) : match;
 	});
 
@@ -74,10 +75,10 @@ plugin.parseRaw = async (content) => {
 };
 
 plugin.clean = function (input, isMarkdown, stripBlockquote, stripCode) {
-	var split = utility.split(input, isMarkdown, stripBlockquote, stripCode);
+	let split = utility.split(input, isMarkdown, stripBlockquote, stripCode);
 	split = split.filter(function (x, i) {
 		// only keep non-code/non-blockquote
-		return (i & 1) === 0;
+		return (i % 2) === 0;
 	});
 	return split.join('');
 };
@@ -96,8 +97,8 @@ plugin.onTopicCreateOrEdit = async (data) => {
 		return data;
 	}
 
-	var cleanedContent = plugin.clean(data.data.content, true, true, true);
-	var matches = cleanedContent.match(plugin.regex);
+	const cleanedContent = plugin.clean(data.data.content, true, true, true);
+	const matches = cleanedContent.match(plugin.regex);
 
 	if (!matches) {
 		return data;
@@ -114,8 +115,8 @@ plugin.onTopicCreateOrEdit = async (data) => {
 
 // We'd like to also store a separate zset for tags made on a per-post basis, so we index them after the fact
 plugin.indexPost = async ({ post }) => {
-	var cleanedContent = plugin.clean(post.content, true, true, true);
-	var matches = cleanedContent.match(plugin.regex);
+	const cleanedContent = plugin.clean(post.content, true, true, true);
+	let matches = cleanedContent.match(plugin.regex);
 	const tid = await posts.getPostField(post.pid, 'tid');
 	const topicTags = await db.getSetMembers(`topic:${tid}:tags`);
 
@@ -124,13 +125,13 @@ plugin.indexPost = async ({ post }) => {
 	}
 
 	matches = matches || [];
-	matches = matches.map((match) => slugify(match));
+	matches = matches.map(match => slugify(match));
 	matches = matches.concat(topicTags);
 	matches = _.uniq(matches);
 
 	const scores = matches.map(Date.now);
 
-	db.sortedSetsAdd(matches.map((match) => `tag:${match}:posts`), scores, post.pid);
+	db.sortedSetsAdd(matches.map(match => `tag:${match}:posts`), scores, post.pid);
 };
 
 // Whenever a specific tag page is loaded, remove the tids and use our own tids (via pids)
@@ -139,7 +140,7 @@ plugin.clobberTagTids = async ({ tag, tids, start, stop }) => {
 
 	const pids = await db.getSortedSetRevRange('tag:' + tag + ':posts', start, stop);
 	const newTids = await posts.getPostsFields(pids, ['tid']);
-	tids = newTids.map((obj) => obj.tid);
+	tids = newTids.map(obj => obj.tid);
 	plugin._cache[tag] = pids;
 
 	return { tag, tids, start, stop };
@@ -149,7 +150,7 @@ plugin.clobberTagTids = async ({ tag, tids, start, stop }) => {
 plugin.updateTagsPage = async (data) => {
 	const tag = utils.cleanUpTag(data.templateData.tag, meta.config.maximumTagLength);
 	const pids = plugin._cache[tag];
-	const tids = data.templateData.topics.map((topic) => topic.tid);
+	const tids = data.templateData.topics.map(topic => topic.tid);
 	const index = await Promise.all(pids.map(async (pid, idx) => posts.getPidIndex(pid, tids[idx])));
 	const teasers = await getTeasers(pids);
 
@@ -168,13 +169,13 @@ plugin.updateTagsPage = async (data) => {
 
 async function getTeasers(pids) {
 	let postData = await posts.getPostsFields(pids, ['pid', 'uid', 'timestamp', 'tid', 'content']);
-	postData = postData.filter((post) => post && post.pid);
+	postData = postData.filter(post => post && post.pid);
 	postData = postData.filter(Boolean);
-	const uids = _.uniq(postData.map((post) => post.uid));
+	const uids = _.uniq(postData.map(post => post.uid));
 
 	const usersData = await user.getUsersFields(uids, ['uid', 'username', 'userslug', 'picture']);
 
-	var users = {};
+	const users = {};
 	usersData.forEach(function (user) {
 		users[user.uid] = user;
 	});
